@@ -41,7 +41,7 @@ function main(json) {
 
 let timer = {
     index: 1,
-    delay: 10, // in ms
+    delay: 100, // in ms
 }
 
 var importObject = {
@@ -132,7 +132,7 @@ WebAssembly.instantiateStreaming(fetch("./wasm/wasm.wasm"), importObject).then((
 
     const container = document.getElementById("treeChart");
     // make an element as large as an image inside it
-    container.style.width = "100vw";
+    container.style.width = "98vw";
     container.style.height = "100vh";
 }).catch(err => {
     console.log(err);

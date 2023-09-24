@@ -25,30 +25,41 @@ export fn sendChild(max: i32) void {
     var goal = State{ .missionary_cannibal = MissCan.init(0, 0, MissCan.Shores.right) };
 
     var sst = SST.init(start);
-    Generator.DepthFirstGeneration(&sst, &allocator, goal, 500) catch return;
+    Generator.BreadthFirstGeneration(&sst, &allocator, goal, 500) catch return;
 
     var currState: MissCan = sst.root.state.missionary_cannibal;
     addChild(0, sst.root.id, currState.cannibal, currState.missionary, currState.shore.toBool());
     var count: i32 = 0;
 
     var walk = std.ArrayList(*Node).init(allocator);
-    var iter = sst.DFSIterator();
+    _ = walk;
+    var iter = sst.BFSIterator(allocator) catch return;
 
     while (iter.next()) |node| {
-        walk.append(node) catch return;
-    }
+        // walk.append(node) catch return;
 
-    while (walk.popOrNull()) |val| {
-        currState = val.state.missionary_cannibal;
+        currState = node.state.missionary_cannibal;
 
         if (count > max) return;
 
-        if (val.parent) |parent| {
-            addChild(parent.id, val.id, currState.cannibal, currState.missionary, currState.shore.toBool());
+        if (node.parent) |parent| {
+            addChild(parent.id, node.id, currState.cannibal, currState.missionary, currState.shore.toBool());
             // if (currState.is_eq(goal.missionary_cannibal)) return;
             count += 1;
         }
     }
+
+    // while (walk.popOrNull()) |val| {
+    //     currState = val.state.missionary_cannibal;
+    //
+    //     if (count > max) return;
+    //
+    //     if (val.parent) |parent| {
+    //         addChild(parent.id, val.id, currState.cannibal, currState.missionary, currState.shore.toBool());
+    //         // if (currState.is_eq(goal.missionary_cannibal)) return;
+    //         count += 1;
+    //     }
+    // }
 }
 
 test "test_wasm" {

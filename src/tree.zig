@@ -60,8 +60,8 @@ pub const SST = struct {
         return DepthFirstIterator.init(sst);
     }
 
-    pub fn BFSIterator(sst: *Self) BreadthFirstIterator {
-        return BFSIterator.init(sst);
+    pub fn BFSIterator(sst: *Self, allocator: Allocator) !BreadthFirstIterator {
+        return try BreadthFirstIterator.init(sst, allocator);
     }
 
     pub fn containsNode(sst: *Self, node: *Node) bool {
@@ -99,7 +99,6 @@ pub const DepthFirstIterator = struct {
             switch (iter.state) {
                 DFSIterState.GoDeeper => {
                     if (current.leftmost_child) |child| {
-                        // std.debug.print("{}\n", .{child.state});
                         iter.current = child;
                         // return child;
                     } else {
@@ -109,7 +108,6 @@ pub const DepthFirstIterator = struct {
                 },
                 DFSIterState.GoBroader => {
                     if (current.right_sibling) |sibling| {
-                        // std.debug.print("{}\n", .{sibling.state});
                         iter.current = sibling;
                         iter.state = DFSIterState.GoDeeper;
                         // return sibling;
@@ -138,44 +136,31 @@ const BreadthFirstIterator = struct {
     tree: *SST,
     current: ?*Node,
     state: BFSIterState,
+    queue: std.ArrayList(*Node),
 
-    fn init(sst: *SST) BreadthFirstIterator {
-        return BreadthFirstIterator{
+    fn init(sst: *SST, allocator: Allocator) !BreadthFirstIterator {
+        var bfs = BreadthFirstIterator{
             .tree = sst,
             .current = &sst.root,
             .state = BFSIterState.GoDeeper,
+            .queue = std.ArrayList(*Node).init(allocator),
         };
+
+        try bfs.queue.append(&bfs.tree.root);
+        return bfs;
     }
 
-    fn next(iter: *BreadthFirstIterator) ?*Node {
-        while (iter.current) |current| {
-            switch (iter.state) {
-                BreadthFirstIterator.GoDeeper => {
-                    // std.debug.print("deeper\n", .{});
-                    if (current.leftmost_child) |child| {
-                        iter.current = child;
-                        iter.state = BFSIterState.GoBroader;
-                        return child;
-                    } else {
-                        iter.state = BFSIterState.GoBroader;
-                        iter.current = current.right_sibling;
-                    }
-                },
-                BreadthFirstIterator.GoBroader => {
-                    if (current.parent) |parent| {
-                        if (current.right_sibling) |sibling| {
-                            iter.current = sibling;
-                            return sibling;
-                        } else {
-                            iter.state = BFSIterState.GoBroader;
-                            iter.current = parent.right_sibling;
-                        }
-                    } else {
-                        iter.state = BFSIterState.GoDeeper;
-                        iter.current = iter.tree.root.right_sibling;
-                    }
-                },
+    pub fn next(iter: *BreadthFirstIterator) ?*Node {
+        while (iter.queue.popOrNull()) |current| {
+            if (current.leftmost_child) |child| {
+                var node = child;
+                iter.queue.insert(0, node) catch return null;
+                while (node.right_sibling) |sibling| {
+                    iter.queue.insert(0, sibling) catch return null;
+                    node = sibling;
+                }
             }
+            return current;
         }
         return null;
     }
