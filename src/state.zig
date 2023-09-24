@@ -36,6 +36,7 @@ pub const MissCann = struct {
     missionary: i32,
     cannibal: i32,
     shore: Shores,
+    status: StateType,
 
     pub const Shores = enum {
         left,
@@ -46,6 +47,26 @@ pub const MissCann = struct {
                 Shores.left => return true,
                 Shores.right => return false,
             }
+        }
+    };
+
+    pub const StateType = enum {
+        Start,
+        Goal,
+        Duplicate,
+        NoContinue,
+        Invalid,
+        NoType,
+
+        pub fn toi32(self: StateType) i32 {
+            return switch (self) {
+                StateType.Start => 0,
+                StateType.Goal => 1,
+                StateType.Duplicate => 2,
+                StateType.NoContinue => 3,
+                StateType.Invalid => 4,
+                StateType.NoType => 5,
+            };
         }
     };
 
@@ -122,11 +143,14 @@ pub const MissCann = struct {
     };
 
     pub fn init(missionary: usize, cannibal: usize, shore: Shores) MissCann {
-        return MissCann{
+        const st = MissCann{
             .missionary = @as(i32, @intCast(missionary)),
             .cannibal = @as(i32, @intCast(cannibal)),
             .shore = shore,
+            .status = StateType.NoType,
         };
+
+        return st;
     }
 
     pub fn is_valid_move(self: MissCann) bool {

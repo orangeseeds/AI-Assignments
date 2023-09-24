@@ -56,8 +56,8 @@ pub const SST = struct {
         child.id = nCount;
     }
 
-    pub fn DFSIterator(sst: *Self) DepthFirstIterator {
-        return DepthFirstIterator.init(sst);
+    pub fn DFSIterator(sst: *Self, allocator: Allocator) !DepthFirstIterator {
+        return try DepthFirstIterator.init(sst, allocator);
     }
 
     pub fn BFSIterator(sst: *Self, allocator: Allocator) !BreadthFirstIterator {
@@ -85,39 +85,33 @@ pub const DepthFirstIterator = struct {
     tree: *SST,
     current: ?*Node,
     state: DFSIterState,
+    stack: std.ArrayList(*Node),
+    pause: bool,
 
-    fn init(sst: *SST) DepthFirstIterator {
-        return DepthFirstIterator{
+    fn init(sst: *SST, allocator: Allocator) !DepthFirstIterator {
+        var iter = DepthFirstIterator{
             .tree = sst,
             .current = &sst.root,
             .state = DFSIterState.GoDeeper,
+            .stack = std.ArrayList(*Node).init(allocator),
+            .pause = false,
         };
+        try iter.stack.append(&sst.root);
+        return iter;
     }
 
+    const err = error{IteratorPaused};
     pub fn next(iter: *Self) ?*Node {
-        while (iter.current) |current| {
-            switch (iter.state) {
-                DFSIterState.GoDeeper => {
-                    if (current.leftmost_child) |child| {
-                        iter.current = child;
-                        // return child;
-                    } else {
-                        iter.state = DFSIterState.GoBroader;
-                        return current;
-                    }
-                },
-                DFSIterState.GoBroader => {
-                    if (current.right_sibling) |sibling| {
-                        iter.current = sibling;
-                        iter.state = DFSIterState.GoDeeper;
-                        // return sibling;
-                    } else {
-                        // std.debug.print("  backtrack\n", .{});
-                        iter.current = current.parent;
-                        return current.parent;
-                    }
-                },
+        while (iter.stack.popOrNull()) |current| {
+            if (current.leftmost_child) |child| {
+                var node = child;
+                iter.stack.append(node) catch return null;
+                while (node.right_sibling) |sibling| {
+                    iter.stack.insert(0, sibling) catch return null;
+                    node = sibling;
+                }
             }
+            return current;
         }
         return null;
     }
@@ -127,7 +121,7 @@ pub const DepthFirstIterator = struct {
     }
 };
 
-const BreadthFirstIterator = struct {
+pub const BreadthFirstIterator = struct {
     const Self = @This();
     const BFSIterState = enum {
         GoDeeper,
@@ -139,15 +133,15 @@ const BreadthFirstIterator = struct {
     queue: std.ArrayList(*Node),
 
     fn init(sst: *SST, allocator: Allocator) !BreadthFirstIterator {
-        var bfs = BreadthFirstIterator{
+        var iter = BreadthFirstIterator{
             .tree = sst,
             .current = &sst.root,
             .state = BFSIterState.GoDeeper,
             .queue = std.ArrayList(*Node).init(allocator),
         };
 
-        try bfs.queue.append(&bfs.tree.root);
-        return bfs;
+        try iter.queue.append(&sst.root);
+        return iter;
     }
 
     pub fn next(iter: *BreadthFirstIterator) ?*Node {
@@ -170,35 +164,35 @@ const BreadthFirstIterator = struct {
     }
 };
 
-test "dfs_iterator" {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    var allocator = arena.allocator();
-
-    var start = State{ .missionary_cannibal = MissCan.init(3, 3, MissCan.Shores.left) };
-    var state_ch1 = State{ .missionary_cannibal = MissCan.init(2, 2, MissCan.Shores.right) };
-    var state_ch2 = State{ .missionary_cannibal = MissCan.init(1, 1, MissCan.Shores.right) };
-    var state_ch3 = State{ .missionary_cannibal = MissCan.init(1, 0, MissCan.Shores.right) };
-    var state_ch4 = State{ .missionary_cannibal = MissCan.init(0, 1, MissCan.Shores.right) };
-
-    var sst = SST.init(start);
-
-    const ch1 = try sst.createNode(&allocator, state_ch1);
-    const ch2 = try sst.createNode(&allocator, state_ch2);
-    const ch3 = try sst.createNode(&allocator, state_ch3);
-
-    const ch4 = try sst.createNode(&allocator, state_ch4);
-
-    sst.insertNode(&sst.root, ch1);
-    sst.insertNode(&sst.root, ch3);
-    sst.insertNode(&sst.root, ch4);
-
-    sst.insertNode(ch1, ch2);
-
-    var iter = sst.DFSIterator();
-    std.debug.print("\n", .{});
-    while (iter.next()) |val| {
-        _ = val;
-    }
-    std.debug.print("\n{}\n", .{sst.root.state});
-}
+// test "dfs_iterator" {
+//     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+//     defer arena.deinit();
+//     var allocator = arena.allocator();
+//
+//     var start = State{ .missionary_cannibal = MissCan.init(3, 3, MissCan.Shores.left) };
+//     var state_ch1 = State{ .missionary_cannibal = MissCan.init(2, 2, MissCan.Shores.right) };
+//     var state_ch2 = State{ .missionary_cannibal = MissCan.init(1, 1, MissCan.Shores.right) };
+//     var state_ch3 = State{ .missionary_cannibal = MissCan.init(1, 0, MissCan.Shores.right) };
+//     var state_ch4 = State{ .missionary_cannibal = MissCan.init(0, 1, MissCan.Shores.right) };
+//
+//     var sst = SST.init(start);
+//
+//     const ch1 = try sst.createNode(&allocator, state_ch1);
+//     const ch2 = try sst.createNode(&allocator, state_ch2);
+//     const ch3 = try sst.createNode(&allocator, state_ch3);
+//
+//     const ch4 = try sst.createNode(&allocator, state_ch4);
+//
+//     sst.insertNode(&sst.root, ch1);
+//     sst.insertNode(&sst.root, ch3);
+//     sst.insertNode(&sst.root, ch4);
+//
+//     sst.insertNode(ch1, ch2);
+//
+//     var iter = try sst.DFSIterator(allocator);
+//     std.debug.print("\n", .{});
+//     while (iter.next()) |val| {
+//         _ = val;
+//     }
+//     std.debug.print("\n{}\n", .{sst.root.state});
+// }

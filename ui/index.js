@@ -1,5 +1,17 @@
 // tree_structure is defined in js/data.js
 
+const slider = document.getElementById("mySlider");
+const sliderValueDisplay = document.getElementById("sliderValue");
+
+let sliderValue = slider.value;
+
+slider.addEventListener("input", () => {
+    sliderValue = slider.value;
+    sliderValue = Number(sliderValue) * 20;
+    timer.delay = sliderValue;
+
+    sliderValueDisplay.textContent = sliderValue;
+});
 
 var tree;
 var wasmTree = {
@@ -31,64 +43,98 @@ var wasmTree = {
             desc: "start node",
         },
         children: [],
-        HTMLclass: "winner",
+        HTMLclass: "start",
     }
 };
 function main(json) {
     tree = new Treant(json);
-
 }
 
 let timer = {
     index: 1,
-    delay: 100, // in ms
+    delay: 400, // in ms
+}
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 var importObject = {
     env: {
-        addChild: function(parentId, childId, cannibals, missionaries, state) {
-            console.log("data", parentId, childId, cannibals, missionaries, state)
-            setTimeout(() => {
-                if (childId === 1) {
-                    wasmTree.nodeStructure.text.id = childId
-                    wasmTree.nodeStructure.text.name = `${cannibals}C ${missionaries}M ${state}`
-                    tree.reload()
-                    return;
-                }
-                else if (parentId == 1) {
-                    wasmTree.nodeStructure.children.push(
-                        {
-                            text: {
-                                id: childId,
-                                name: `${cannibals}C ${missionaries}M ${state}`,
-                                desc: `${childId}`,
-                            },
-                            children: [],
-                        }
-                    )
-                    tree.reload()
-                    return;
-                }
+        addChild: function(parentId, childId, cannibals, missionaries, state, status) {
+            // console.log(status)
 
-                let node = findNodeById(wasmTree.nodeStructure, parentId)
-                if (node && node.children) {
-                    node.children.push(
-                        {
-                            text: {
-                                id: childId,
-                                name: `${cannibals}C ${missionaries}M ${state}`,
-                                desc: `${childId}`,
-                            },
-                            children: [],
-                        }
-                    );
+            // StateType.Start => 0,
+            // StateType.Goal => 1,
+            // StateType.Duplicate => 2,
+            // StateType.NoContinue => 3,
+            // StateType.Invalid => 4,
+            // StateType.NoType => 5,
+            //
+            let className = "";
+            switch (status) {
+                case 0:
+                    className = "start";
+                    break;
+                case 1:
+                    className = "goal";
+                    break;
+                case 2:
+                    className = "duplicate";
+                    break;
+                case 3:
+                    className = "no-continue";
+                    break;
+                case 4:
+                    className = "invalid";
+                    break;
+                default:
+                    className = "no-type";
+                    break;
+            }
 
-                }
-
-                console.log(wasmTree.nodeStructure)
+            if (childId === 1) {
+                wasmTree.nodeStructure.text.id = childId
+                wasmTree.nodeStructure.text.name = `${cannibals}C ${missionaries}M ${state}`
                 tree.reload()
-            }, timer.delay * timer.index)
-            timer.index = timer.index + 1
+                return;
+            }
+            else if (parentId == 1) {
+                wasmTree.nodeStructure.children.push(
+                    {
+                        text: {
+                            id: childId,
+                            name: `${cannibals}C ${missionaries}M ${state}`,
+                            desc: `${childId}`,
+                        },
+
+                        HTMLclass: className,
+                        children: [],
+                    }
+                )
+                tree.reload()
+                return;
+            }
+
+            let node = findNodeById(wasmTree.nodeStructure, parentId)
+            if (node && node.children) {
+                node.children.push(
+                    {
+                        text: {
+                            id: childId,
+                            name: `${cannibals}C ${missionaries}M ${state}`,
+                            desc: `${childId}`,
+                        },
+
+                        HTMLclass: className,
+                        children: [],
+                    }
+                );
+
+            }
+
+            // console.log(wasmTree.nodeStructure)
+            tree.reload()
+            window.scrollTo(0, document.body.scrollHeight);
         },
 
     },
@@ -96,7 +142,6 @@ var importObject = {
 
 function findNodeById(tree, targetId) {
     if (!tree || typeof tree !== 'object') {
-        // console.log("here")
         return null;
     }
 
@@ -113,11 +158,18 @@ function findNodeById(tree, targetId) {
         }
     }
 
-    // console.log("here null")
     return null;
 }
 
-WebAssembly.instantiateStreaming(fetch("./wasm/wasm.wasm"), importObject).then((result) => {
+async function run(callback) {
+    let next = 1;
+    while (next != 0) {
+        await sleep(timer.delay);
+        next = callback()
+    }
+}
+
+WebAssembly.instantiateStreaming(fetch("./wasm/wasm.wasm"), importObject).then(async (result) => {
     // const wasmMemoryArray = new Uint8Array(memory.buffer);
     //
     window.addEventListener("click", () => {
@@ -127,13 +179,30 @@ WebAssembly.instantiateStreaming(fetch("./wasm/wasm.wasm"), importObject).then((
     main(wasmTree);
 
     var instance = result.instance;
-    var data = instance.exports.sendChild(100)
-    console.log(data)
+    var data = instance.exports.dfsSetup(100)
+    // var data = instance.exports.sendChild(100)
 
-    const container = document.getElementById("treeChart");
+    let next = instance.exports.dfsNext
+
+
+    const container = document.getElementById("container");
+    // const content = document.getElementById("treeChart");
     // make an element as large as an image inside it
-    container.style.width = "98vw";
-    container.style.height = "100vh";
+    container.style.overflow = "hidden";
+    content.style.overflow = "hidden";
+    content.style.width = "auto";
+    content.style.height = "auto";
+    container.style.width = "auto";
+    container.style.height = "auto";
+    container.style.minHeight = "100vh";
+    container.style.display = "flex";
+
+    container.style.justifyContent = "center";
+    container.style.alignItems = "center";
+    // container.style.overflowX = "auto";
+    // container.style.overflowY = "auto";
+
+    await run(next);
 }).catch(err => {
     console.log(err);
 })

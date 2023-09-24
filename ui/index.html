@@ -9,14 +9,217 @@
     <link rel="stylesheet" href="css/Treant.css ">
     <link rel="stylesheet" href="css/example7.css">
     <script src="js/data.js"></script>
+    <style>
+        .slider-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            /* display: ; */
+            justify-content: space-evenly;
+            align-items: center;
+        }
+
+        /* Style the slider */
+        .slider {
+            width: 150px;
+            height: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        /* Style the slider thumb */
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #4caf50;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #4caf50;
+            cursor: pointer;
+        }
+
+        /* Style for the value display */
+        .slider-value {
+            margin-top: 10px;
+            margin-left: 10px;
+        }
+
+
+        /* StateType.Start => 0,
+             StateType.Goal => 1,
+             StateType.Duplicate => 2,
+             StateType.NoContinue => 3,
+             StateType.Invalid => 4,
+             StateType.NoType => 5,
+            */
+
+        .duplicate {
+            color: purple;
+        }
+
+        .start {
+            color: green;
+        }
+
+        .goal {
+            color: yellow;
+        }
+
+        .no-continue {
+            color: cyan;
+        }
+
+        .invalid {
+            color: red;
+        }
+
+        .no-type {
+            color:gray;
+        }
+
+
+        .legends-card {
+            border: 1px solid #ccc;
+            padding: 20px;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .legends-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .legends-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #333;
+            margin-right: 10px;
+        }
+
+        .legend-label {
+            font-size: 14px;
+            color: #333;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="chart Treant loaded" id="treeChart"></div>
+    <div class="slider-container">
+        <!-- Create a slider input element -->
+        <input type="range" min="1" max="100" value="20" class="slider" id="mySlider">
+
+        <!-- Display the slider value -->
+        <p class="slider-value">Delay: <span id="sliderValue">400</span> <span>ms</span></p>
+
+        <br>
+        <div class="legends-card">
+            <div class="legends-title">Labels</div>
+            <ul class="legends-list">
+                <li class="legend-item start">
+                    Expandable Node
+                </li>
+                <li class="legend-item duplicate">
+                    Duplicate Node
+                </li>
+                <li class="legend-item goal">
+                    Goal Node
+                </li>
+                <li class="legend-item no-continue">
+                    Not Continuable Node
+                </li>
+                <li class="legend-item invalid">
+                    Invalid Node
+                </li>
+                <li class="legend-item no-type">
+                    Non Typed Node
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div id="container">
+        <div class="chart Treant loaded" id="treeChart"></div>
+    </div>
     <script module src="js/vendor/raphael.js"></script>
     <script module src="js/Treant.js"></script>
     <script src="index.js"></script>
 
 </body>
+
+<script>
+
+    const container = document.getElementById("container");
+    const content = document.getElementById("treeChart");
+
+    let zoomLevel = 1.0;
+
+    container.addEventListener("wheel", (event) => {
+        // Check if the Ctrl key is held down
+        if (event.ctrlKey) {
+            event.preventDefault(); // Prevent the default scrolling behavior
+
+            // Calculate the new zoom level based on the scroll direction
+            zoomLevel += event.deltaY * -0.01;
+
+            // Clamp the zoom level to a minimum and maximum value if needed
+            zoomLevel = Math.min(Math.max(0.1, zoomLevel), 3.0);
+
+            // Apply the zoom using CSS transform
+            content.style.transform = `scale(${zoomLevel})`;
+
+        }
+    });
+
+    // let isDragging = false;
+    // let offsetX, offsetY;
+    //
+    // content.addEventListener("mousedown", (e) => {
+    //     isDragging = true;
+    //     offsetX = e.clientX - content.getBoundingClientRect().left + 20;
+    //     offsetY = e.clientY - content.getBoundingClientRect().top + 20;
+    //     content.style.cursor = "grabbing"; // Change cursor style while dragging
+    // });
+    //
+    // document.addEventListener("mousemove", (e) => {
+    //     if (!isDragging) return;
+    //
+    //     const newX = e.clientX - offsetX;
+    //     const newY = e.clientY - offsetY;
+    //
+    //     content.style.left = newX + "px";
+    //     content.style.top = newY + "px";
+    // });
+    //
+    // document.addEventListener("mouseup", () => {
+    //     isDragging = false;
+    //     content.style.cursor = "grab";
+    // });
+    //
+    //
+</script>
 
 </html>
