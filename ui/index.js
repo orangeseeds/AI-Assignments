@@ -179,10 +179,10 @@ WebAssembly.instantiateStreaming(fetch("./wasm/wasm.wasm"), importObject).then(a
     main(wasmTree);
 
     var instance = result.instance;
-    var data = instance.exports.dfsSetup(100)
+    var data = instance.exports.bfsSetup(100)
     // var data = instance.exports.sendChild(100)
 
-    let next = instance.exports.dfsNext
+    let next = instance.exports.bfsNext
 
 
     const container = document.getElementById("container");
