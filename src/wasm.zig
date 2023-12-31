@@ -1,11 +1,12 @@
+// const builtin = @import("builtin");
 const std = @import("std");
-const SST = @import("tree.zig").SST;
-const tree = @import("tree.zig");
-const State = @import("state.zig").State;
-const Node = @import("tree.zig").Node;
-const MissCan = @import("state.zig").MissCann;
-const Shores = @import("state.zig").MissCann.Shores;
-const Generator = @import("generate.zig");
+const SST = @import("tree/tree.zig").SST;
+const tree = @import("tree/tree.zig");
+const State = @import("tree/state.zig").State;
+const Node = @import("tree/tree.zig").Node;
+const MissCan = @import("tree/state.zig").MissCann;
+const Shores = @import("tree/state.zig").MissCann.Shores;
+const Generator = @import("tree/generate.zig");
 
 var DFSIterator: tree.DepthFirstIterator = undefined;
 var BFSIterator: tree.BreadthFirstIterator = undefined;
