@@ -2,8 +2,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 pub const State = union(enum) {
-    missionary_cannibal: MissCann,
-    // eight_puzzle: EightPuzzle,
+    // missionary_cannibal: MissCann,
+    eight_puzzle: EightPuzzle,
 
     pub fn is_valid_move(self: State) bool {
         switch (self) {
@@ -13,7 +13,8 @@ pub const State = union(enum) {
 
     pub fn is_eq(self: State, state: State) bool {
         const st = switch (self) {
-            .missionary_cannibal => state.missionary_cannibal,
+            // .missionary_cannibal => state.missionary_cannibal,
+            .eight_puzzle => state.eight_puzzle,
         };
         switch (self) {
             inline else => |case| return case.is_eq(st),
@@ -181,6 +182,23 @@ pub const EightPuzzle = struct {
     puzzle: [3][3]u8,
     currPos: Position,
 
+    status: StateType,
+
+    pub const StateType = enum {
+        Start,
+        Goal,
+        Duplicate,
+        NoType,
+
+        pub fn toi32(self: StateType) i32 {
+            return switch (self) {
+                StateType.Start => 0,
+                StateType.Goal => 1,
+                StateType.Duplicate => 2,
+                StateType.NoType => 5,
+            };
+        }
+    };
     const Position = struct {
         row: usize,
         col: usize,
@@ -202,46 +220,53 @@ pub const EightPuzzle = struct {
         }
 
         fn operate(self: Moves, s: EightPuzzle) !EightPuzzle {
-            var child = s;
             switch (self) {
                 Moves.UP => {
-                    try s.swapPosVal(Position{
-                        .row = s.currPos.row - 1,
+                    const child = try swapPosVal(s, Position{
+                        .row = try std.math.sub(usize, s.currPos.row, 1),
                         .col = s.currPos.col,
                     });
+                    return child;
                 },
                 Moves.DOWN => {
-                    try s.swapPosVal(Position{
+                    const child = try swapPosVal(s, Position{
                         .row = s.currPos.row + 1,
                         .col = s.currPos.col,
                     });
+
+                    return child;
                 },
                 Moves.LEFT => {
-                    try s.swapPosVal(Position{
+                    const child = try swapPosVal(s, Position{
                         .row = s.currPos.row,
-                        .col = s.currPos.col - 1,
+                        .col = try std.math.sub(usize, s.currPos.col, 1),
                     });
+
+                    return child;
                 },
                 Moves.RIGHT => {
-                    try s.swapPosVal(Position{
+                    const child = try swapPosVal(s, Position{
                         .row = s.currPos.row,
                         .col = s.currPos.col + 1,
                     });
+
+                    return child;
                 },
             }
-            return child;
         }
     };
 
     pub fn init(puzzle: [3][3]u8) EightPuzzle {
-        const currPost = EightPuzzle.findEmpty(puzzle);
+        var currPost = EightPuzzle.findEmpty(puzzle);
         return EightPuzzle{
             .puzzle = puzzle,
             .currPos = currPost,
+            .status = StateType.NoType,
         };
     }
 
-    pub fn is_eq(self: EightPuzzle, puzz: [3][3]u8) bool {
+    pub fn is_eq(self: EightPuzzle, state: EightPuzzle) bool {
+        const puzz = state.puzzle;
         for (0..3) |i| {
             for (0..3) |j| {
                 if (self.puzzle[i][j] != puzz[i][j]) {
@@ -276,15 +301,18 @@ pub const EightPuzzle = struct {
     }
 
     const errors = error{PositionOutOfBounds};
-    fn swapPosVal(self: EightPuzzle, pos: Position) !void {
-        _ = self;
-        if (pos.col < 0 or pos.col > 3 or pos.row < 0 or pos.col > 3) {
+    fn swapPosVal(state: EightPuzzle, pos: Position) !EightPuzzle {
+        if (pos.col < 0 or pos.col > 2 or pos.row < 0 or pos.row > 2) {
             return errors.PositionOutOfBounds;
         }
         // BUG: This section is still under work, cannot assign to const array.
-        // const currPosVal = self.puzzle[self.currPos.row][self.currPos.col];
-        // self.puzzle[self.currPos.row][self.currPos.col] = self.puzzle[pos.row][pos.col];
-        // self.puzzle[pos.row][pos.col] = currPosVal;
+        const currPosVal = state.puzzle[state.currPos.row][state.currPos.col];
+        var puzz = state.puzzle;
+
+        puzz[state.currPos.row][state.currPos.col] = state.puzzle[pos.row][pos.col];
+        puzz[pos.row][pos.col] = currPosVal;
+        var child = EightPuzzle.init(puzz);
+        return child;
     }
 
     // WARN: This is remaining, currently just a placeholder
@@ -299,9 +327,29 @@ pub const EightPuzzle = struct {
             var child = State{
                 .eight_puzzle = mov.operate(self) catch continue,
             };
+            // std.debug.print("\nmoved {}", .{mov});
+            // std.debug.print("\nchild {}\n", .{child.eight_puzzle.currPos});
 
             try childStates.append(child);
         }
         return childStates;
+    }
+
+    pub fn misplacedTiles(self: EightPuzzle, final: EightPuzzle) u8 {
+        var misplaced: u8 = 0;
+        for (self.puzzle, 0..) |row, r| {
+            for (row, 0..) |col, c| {
+                _ = col;
+                if (self.puzzle[r][c] != final.puzzle[r][c]) {
+                    misplaced += 1;
+                }
+            }
+        }
+        return misplaced;
+    }
+
+    pub fn is_equal(self: EightPuzzle, state: EightPuzzle) bool {
+        const misplaced = self.misplacedTiles(state);
+        return misplaced == 0;
     }
 };

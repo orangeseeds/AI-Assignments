@@ -9,9 +9,10 @@ pub const Node = struct {
     right_sibling: ?*Node,
     state: State,
     id: i32,
+    generation: usize,
 
     fn init(state: State) Node {
-        const n = Node{ .parent = null, .leftmost_child = null, .right_sibling = null, .state = state, .id = -1 };
+        const n = Node{ .parent = null, .leftmost_child = null, .right_sibling = null, .state = state, .id = -1, .generation = 0 };
         return n;
     }
 };
@@ -50,6 +51,7 @@ pub const SST = struct {
 
     pub fn insertNode(_: *Self, parent: *Node, child: *Node) void {
         child.parent = parent;
+        child.generation = parent.generation + 1;
         child.right_sibling = parent.leftmost_child;
         parent.leftmost_child = child;
         nCount = nCount + 1;
