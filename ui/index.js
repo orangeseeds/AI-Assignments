@@ -60,7 +60,7 @@ function sleep(ms) {
 
 var importObject = {
     env: {
-        addChild: function(parentId, childId, cannibals, missionaries, state, status) {
+        addChild: function(parentId, childId, row, col, misplaced, status) {
             // console.log(status)
 
             // StateType.Start => 0,
@@ -94,7 +94,7 @@ var importObject = {
 
             if (childId === 1) {
                 wasmTree.nodeStructure.text.id = childId
-                wasmTree.nodeStructure.text.name = `${cannibals}C ${missionaries}M ${state}`
+                wasmTree.nodeStructure.text.name = `${row}R ${col}C ${misplaced}H`
                 tree.reload()
                 return;
             }
@@ -103,7 +103,7 @@ var importObject = {
                     {
                         text: {
                             id: childId,
-                            name: `${cannibals}C ${missionaries}M ${state}`,
+                            name: `${row}R ${col}C ${misplaced}H`,
                             desc: `${childId}`,
                         },
 
@@ -121,7 +121,7 @@ var importObject = {
                     {
                         text: {
                             id: childId,
-                            name: `${cannibals}C ${missionaries}M ${state}`,
+                            name: `${row}R ${col}C ${misplaced}H`,
                             desc: `${childId}`,
                         },
 
@@ -169,7 +169,7 @@ async function run(callback) {
     }
 }
 
-WebAssembly.instantiateStreaming(fetch("./wasm/wasm.wasm"), importObject).then(async (result) => {
+WebAssembly.instantiateStreaming(fetch("./wasm/wasm-eight.wasm"), importObject).then(async (result) => {
     // const wasmMemoryArray = new Uint8Array(memory.buffer);
     //
     window.addEventListener("click", () => {
@@ -179,10 +179,10 @@ WebAssembly.instantiateStreaming(fetch("./wasm/wasm.wasm"), importObject).then(a
     main(wasmTree);
 
     var instance = result.instance;
-    var data = instance.exports.bfsSetup(100)
+    var data = instance.exports.dfsSetup(100)
     // var data = instance.exports.sendChild(100)
 
-    let next = instance.exports.bfsNext
+    let next = instance.exports.dfsNext
 
 
     const container = document.getElementById("container");
